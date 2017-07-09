@@ -1,0 +1,13 @@
+body {
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif
+}
+.promise-button--loading,
+.link--loading {
+    background-color: silver;
+    color: gray;
+    cursor: wait;
+}
+
+.link--active {
+    font-weight: bold;
+}

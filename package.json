@@ -1,0 +1,37 @@
+{
+  "name": "scores24-frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "pm2 start scripts/frontend.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mobx": "^3.1.16",
+    "mobx-react": "^4.2.2",
+    "turbo-router": "^1.0.0-rc.2",
+    "turboreact": "^1.0.2"
+  },
+  "devDependencies": {
+    "webbuilder": "^1.0.32",
+    "node-sass": "^4.5.3",
+    "pm2": "^2.5.0",
+    "@types/node": "^8.0.1",
+    "@types/prop-types": "^15.5.1",
+    "@types/react": "^15.0.34",
+    "@types/react-dom": "^15.5.1",
+    "@types/koa": "^2.0.39",
+    "@types/koa-router": "^7.0.22",
+    "koa": "^2.3.0",
+    "babel-types": "^6.25.0",
+    "ejs": "^2.5.6",
+    "koa-router": "^7.2.1",
+    "koa-static": "^3.0.0",
+    "typescript": "^2.5.0-dev.20170629",
+    "ts-node": "^3.1.0"
+  }
+}
