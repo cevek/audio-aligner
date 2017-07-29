@@ -18,6 +18,9 @@ export function createPackerInstance() {
     return new Packer(packerConfig, promise => promise
         .then(ts('index.tsx', {
             customTransformers: {
+                before: [
+                    require('turboreact/bem-transformer')
+                ],
                 after: [
                     require('turboreact/ts-transformer')
                 ]
