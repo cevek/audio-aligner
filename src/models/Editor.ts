@@ -1,33 +1,27 @@
 import { observable } from 'mobx';
 import { AudioModel } from './Audio';
+import { LocalStorageValue } from '../lib/LocalStorageValue';
 
 export class EditorSelection {
     @observable lineIdx = -1;
     @observable wordIdx = -1;
 }
 
+
+interface LocalSettings {
+    audioFixes: { [hash: number]: [number, number] }
+}
+
 export class EditorModel {
+    id: string;
     @observable lines: LineModel[] = [];
     selection = new EditorSelection();
     audioModel: AudioModel;
 
-    moveLeft() {
-
-    }
-
-    moveRight() {
-
-    }
-
-    moveUp() {
-
-    }
-
-    moveDown() {
-
-    }
+    localSettings = new LocalStorageValue<LocalSettings>('yt_' + this.id);
 
     constructor(json: any) {
+        this.id = json.id;
         this.lines = json.lines.map((line: any) => new LineModel(line.text, line.start, line.start + line.dur));
     }
 
@@ -50,6 +44,7 @@ export class EditorModel {
             }
             this.selection.wordIdx = 0;
             this.selection.lineIdx++;
+            this.selectAudio();
         }
     }
 
@@ -61,15 +56,38 @@ export class EditorModel {
             this.lines.splice(this.selection.lineIdx - 1, 2, newLine);
             this.selection.wordIdx += prevLine.words.length;
             this.selection.lineIdx--;
+            this.selectAudio();
         }
     }
 
     selectAudio() {
         const line = this.getLine(this.selection.lineIdx);
         if (line && this.audioModel) {
-            this.audioModel.selection.start = line.start;
-            this.audioModel.selection.end = line.end;
+            const settings = this.localSettings.get();
+            let start = line.start;
+            let end = line.end;
+            if (settings) {
+                const fixes = settings.audioFixes[line.hash];
+                if (fixes) {
+                    start = fixes[0];
+                    end = fixes[1];
+                }
+            }
+            this.audioModel.selection.start = start;
+            this.audioModel.selection.end = end;
             this.audioModel.scrollToSelection();
+        }
+    }
+
+    updateLineTime(lineIdx: number, start: number, end: number) {
+        const line = this.getLine(lineIdx);
+        if (line) {
+            const newLine = new LineModel(line.text, start, end);
+            this.lines.splice(lineIdx, 1, newLine);
+            const settings = this.localSettings.get();
+            if (settings) {
+                settings.audioFixes[newLine.hash] = [start, end];
+            }
         }
     }
 }
@@ -81,6 +99,7 @@ export class LineModel {
     readonly end: number;
     readonly confidentStart: boolean;
     readonly confidentEnd: boolean;
+    readonly hash: number;
 
     constructor(text: string, start: number, end: number, confidentStart = true, confidentEnd = true) {
         this.text = text.trim();
@@ -89,6 +108,7 @@ export class LineModel {
         this.confidentStart = confidentStart;
         this.confidentEnd = confidentEnd;
         this.words = this.text.split(/\s+/).map(w => new WordModel(w));
+        this.hash = makeHash(this.text);
     }
 
     splitAtWordPos(pos: number) {
@@ -118,3 +138,12 @@ export class WordModel {
     }
 }
 
+
+export function makeHash(str: string) {
+    let hash = 5381;
+    let i = str.length;
+    while (i) {
+        hash = (hash * 33) ^ str.charCodeAt(--i);
+    }
+    return hash >>> 0;
+}
