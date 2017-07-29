@@ -1,4 +1,5 @@
 import { observable } from 'mobx';
+import { AudioModel } from './Audio';
 
 export class EditorSelection {
     @observable lineIdx = -1;
@@ -8,6 +9,7 @@ export class EditorSelection {
 export class EditorModel {
     @observable lines: LineModel[] = [];
     selection = new EditorSelection();
+    audioModel: AudioModel;
 
     moveLeft() {
 
@@ -26,11 +28,7 @@ export class EditorModel {
     }
 
     constructor(json: any) {
-        this.fromJSON(json);
-    }
-
-    private fromJSON(json: any) {
-        this.lines = json.lines.map((line: any) => new LineModel(line.text, line.start, line.end));
+        this.lines = json.lines.map((line: any) => new LineModel(line.text, line.start, line.start + line.dur));
     }
 
     getLine(line: number) {
@@ -65,6 +63,15 @@ export class EditorModel {
             this.selection.lineIdx--;
         }
     }
+
+    selectAudio() {
+        const line = this.getLine(this.selection.lineIdx);
+        if (line && this.audioModel) {
+            this.audioModel.selection.start = line.start;
+            this.audioModel.selection.end = line.end;
+            this.audioModel.scrollToSelection();
+        }
+    }
 }
 
 export class LineModel {
@@ -81,7 +88,7 @@ export class LineModel {
         this.end = end;
         this.confidentStart = confidentStart;
         this.confidentEnd = confidentEnd;
-        this.words = this.text.split(' ').map(w => new WordModel(w));
+        this.words = this.text.split(/\s+/).map(w => new WordModel(w));
     }
 
     splitAtWordPos(pos: number) {

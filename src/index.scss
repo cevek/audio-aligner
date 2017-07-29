@@ -19,8 +19,14 @@ body {
 
 .editor {
 
+  &__lines {
+    margin: 100px;
+  }
   &__line {
-
+    padding: 5px;
+    &--selected {
+      background-color: antiquewhite;
+    }
   }
 }
 
@@ -34,3 +40,38 @@ body {
     border-color: rgba(0, 0, 0, .3);
   }
 }
+
+.audio-selection {
+  position: absolute;
+  top: 0px;
+  &__handle {
+    position: absolute;
+    top: 0px;
+    height: 100%;
+    background: rgba(100, 237, 255, 0.3);
+    mix-blend-mode: lighten;
+  }
+
+}
+
+.sound-gram {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  overflow: hidden;
+  overflow-x: scroll;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.2);
+  height: 50px;
+  &__inner {
+
+  }
+  &__current-time {
+    top: 0;
+    position: absolute;
+    width: 1px;
+    background: white;
+  }
+
+}
+

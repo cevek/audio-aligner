@@ -3,17 +3,22 @@ import { RouteParams } from 'turbo-router';
 import { EditorModel, WordModel } from '../models/Editor';
 import { observer } from 'mobx-react';
 import { DocKey } from '../lib/DocKey';
+import { b_ } from '../lib/b_';
+import { SoundGram } from './SoundGram';
+import { AudioModel } from '../models/Audio';
+import { HTTP } from '../lib/HTTP';
+import { fetchTrascript, Sub } from './Sub';
 
-function b_(Class: any) {
-    return Class;
-}
 
 export interface EditorProps {
     model: EditorModel;
+    audioUrl: string;
+    subs: Sub[];
 }
 
 export enum KeyCodes {
     ENTER = 13,
+    SPACE = 32,
     BACKSPACE = 8,
     LEFT = 37,
     UP = 38,
@@ -25,14 +30,25 @@ export enum KeyCodes {
 @observer
 export class Editor extends React.Component<EditorProps, {}> {
     static onEnter({ urlParams, onEnd }: RouteParams): Promise<EditorProps> {
-        const model = new EditorModel({ lines: [{ text: 'foo bar tod' }, { text: 'Hello my friend' }] });
-        return Promise.resolve({ model });
+        const ytId = 'sRBaEM3ngCc';
+        return new HTTP({ apiUrl: '/api' }).requestJSON('GET', '/video-data/' + ytId).then((data: { status: string; url?: string }) => {
+            return fetchTrascript(ytId).then(subs => {
+                // console.log(subs);
+                const model = new EditorModel({ lines: subs });
+                return { model, audioUrl: data.url!, subs };
+            });
+        });
     }
 
     keyDown = (e: KeyboardEvent) => {
         const { model } = this.props;
         let handled = false;
         switch (e.keyCode) {
+            case KeyCodes.SPACE: {
+                handled = true;
+                model.audioModel.playSelection();
+                break;
+            }
             case KeyCodes.ENTER: {
                 handled = true;
                 model.splitLine(!e.shiftKey);
@@ -71,18 +87,30 @@ export class Editor extends React.Component<EditorProps, {}> {
 
         }
         if (handled) {
+            model.selectAudio();
             e.preventDefault();
         }
     };
+
+
+    componentDidMount() {
+        AudioModel.load(this.props.audioUrl).then(audioModel => {
+            this.props.model.audioModel = audioModel;
+            this.forceUpdate();
+        });
+    }
 
     render() {
         const { model } = this.props;
         return (
             <div className="__">
                 <DocKey onKeyDown={this.keyDown}/>
-                <div>
+                {model.audioModel ?
+                    <SoundGram audioModel={model.audioModel}/> : null
+                }
+                <div className="__lines">
                     {model.lines.map((line, lineIdx) =>
-                        <div className="__line">
+                        <div className="__line" className-__line--selected={model.selection.lineIdx === lineIdx}>
                             {line.words.map((w, wIdx) =>
                                 <EditorWord word={w} model={model} lineIdx={lineIdx} wordIdx={wIdx}/>
                             )}
@@ -113,6 +141,7 @@ export class EditorWord extends React.Component<EditorWordProps, {}> {
         const { model, lineIdx, wordIdx } = this.props;
         model.selection.lineIdx = lineIdx;
         model.selection.wordIdx = wordIdx;
+        model.selectAudio();
     };
 
     render() {
