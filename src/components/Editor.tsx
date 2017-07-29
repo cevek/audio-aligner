@@ -8,6 +8,7 @@ import { SoundGram } from './SoundGram';
 import { AudioModel } from '../models/Audio';
 import { HTTP } from '../lib/HTTP';
 import { fetchTrascript, Sub } from './Sub';
+import { PlayingStatus } from 'sound-utils';
 
 
 export interface EditorProps {
@@ -46,7 +47,11 @@ export class Editor extends React.Component<EditorProps, {}> {
         switch (e.keyCode) {
             case KeyCodes.SPACE: {
                 handled = true;
-                model.audioModel.playSelection();
+                if (model.audioModel.play.getState() === PlayingStatus.STOPPING) {
+                    model.audioModel.playSelection();
+                } else {
+                    model.audioModel.play.stop();
+                }
                 break;
             }
             case KeyCodes.ENTER: {
@@ -77,17 +82,20 @@ export class Editor extends React.Component<EditorProps, {}> {
                 if (model.selection.lineIdx > 0) {
                     model.selection.lineIdx--;
                 }
+                model.selectAudio();
+                model.audioModel.playSelection();
                 break;
             case KeyCodes.DOWN:
                 handled = true;
                 if (model.selection.lineIdx < model.lines.length - 1) {
                     model.selection.lineIdx++;
                 }
+                model.selectAudio();
+                model.audioModel.playSelection();
                 break;
 
         }
         if (handled) {
-            model.selectAudio();
             e.preventDefault();
         }
     };
