@@ -43,13 +43,25 @@ body {
 
 .audio-selection {
   position: absolute;
-  top: 0px;
-  &__handle {
+  top: 0;
+  &__selection {
     position: absolute;
-    top: 0px;
+    top: 0;
     height: 100%;
     background: rgba(100, 237, 255, 0.3);
     mix-blend-mode: lighten;
+  }
+
+  &__left-handle, &__right-handle {
+    width: 20px;
+    margin-left: -10px;
+    position: absolute;
+    mix-blend-mode: lighten;
+    top: 0;
+    height: 100%;
+    cursor: ew-resize;
+  }
+  &__right-handle {
   }
 
 }
@@ -60,7 +72,7 @@ body {
   top: 0;
   right: 0;
   overflow: hidden;
-  overflow-x: scroll;
+  //overflow-x: scroll;
   border-bottom: 3px solid rgba(0, 0, 0, 0.2);
   height: 50px;
   &__inner {
@@ -71,6 +83,16 @@ body {
     position: absolute;
     width: 1px;
     background: white;
+  }
+
+  &__lines {
+  }
+  &__line {
+    position: absolute;
+    top: 0;
+    background: rgba(100, 237, 255, 0.3);
+    mix-blend-mode: lighten;
+    height: 10px;
   }
 
 }

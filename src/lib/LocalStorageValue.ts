@@ -1,11 +1,12 @@
 export class LocalStorageValue<T> {
     protected static storeAvail = false;
-    protected value: T | undefined = void 0;
+    protected value: T;
+    protected valueString: string;
     protected static storageChecked = false;
 
     static onError: ((err: Error) => void) | undefined = void 0;
 
-    constructor(protected name: string) {
+    constructor(protected name: string, protected factory: () => T) {
         if (!LocalStorageValue.storageChecked) {
             LocalStorageValue.checkLocalStorage();
             LocalStorageValue.storageChecked = true;
@@ -41,7 +42,7 @@ export class LocalStorageValue<T> {
     }
 
     set (value: T) {
-        if (LocalStorageValue.storeAvail && this.value !== value) {
+        if (LocalStorageValue.storeAvail && JSON.stringify(value) !== this.valueString) {
             this._set(value);
         }
         this.value = value;
@@ -65,7 +66,11 @@ export class LocalStorageValue<T> {
 
     protected _get() {
         try {
-            this.value = JSON.parse(localStorage.getItem(this.name) || '');
+            this.valueString = localStorage.getItem(this.name) || 'null';
+            this.value = JSON.parse(this.valueString);
+            if (this.value === null) {
+                this.value = this.factory();
+            }
         } catch (e) {
             LocalStorageValue.catchError(e);
         }

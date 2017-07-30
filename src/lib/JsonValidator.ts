@@ -12,7 +12,7 @@ export function numberOrNull(num: number): number | null {
     return number(num);
 }
 
-export function numberEnum(num: number, enumObj: {}): number {
+export function numberEnum(num: number, enumObj: any): number {
     const validNum = number(num);
     if (typeof enumObj[validNum] !== 'string') {
         throw new Error(`${errorPrefix} ${validNum} is not from a enum ${JSON.stringify(enumObj)}`);

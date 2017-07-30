@@ -2,10 +2,13 @@ import * as React from 'react';
 import { b_ } from '../lib/b_';
 import { AudioModel } from '../models/Audio';
 import { observer } from 'mobx-react';
+import { DocMouse } from '../lib/DocMouse';
+import { EditorModel } from '../models/Editor';
 
 
 interface SoundGramProps {
     audioModel: AudioModel;
+    model: EditorModel;
 }
 
 @b_
@@ -42,12 +45,20 @@ export class SoundGram extends React.Component<SoundGramProps, {}> {
     }
 
     render() {
-        const { audioModel } = this.props;
+        const { audioModel, model } = this.props;
         return (
             <div ref="root" className="__">
                 <div className="__inner">
                     <canvas ref="canvas2"/>
-                    <AudioSelection audioModel={audioModel}/>
+                    <div className="__lines">
+                        {model.lines.map(line =>
+                            <div className="__line" style={{
+                                left: audioModel.getXByTime(line.start),
+                                width: audioModel.getXByTime(line.end - line.start)
+                            }}/>
+                        )}
+                    </div>
+                    <AudioSelection audioModel={audioModel} model={model}/>
                     <div
                         className="__current-time"
                         ref="currentTime"
@@ -64,8 +75,10 @@ export class SoundGram extends React.Component<SoundGramProps, {}> {
 
 interface AudioSelectionProps {
     audioModel: AudioModel;
+    model: EditorModel;
 }
 
+@b_
 @observer
 class AudioSelection extends React.Component<AudioSelectionProps, {}> {
     isMove = false;
@@ -73,57 +86,114 @@ class AudioSelection extends React.Component<AudioSelectionProps, {}> {
     startClientX = 0;
     width = 0;
 
-    componentDidMount() {
-        // document.addEventListener('mousedown', e => this.start(e));
-        document.addEventListener('mousemove', e => this.move(e));
-        document.addEventListener('mouseup', e => this.stop());
-    }
+    currentStart = 0;
+    currentEnd = 0;
+
+    // componentDidMount() {
+    //     // document.addEventListener('mousedown', e => this.start(e));
+    //     document.addEventListener('mousemove', e => this.move(e));
+    //     document.addEventListener('mouseup', e => this.stop());
+    // }
 
     start = (e: React.MouseEvent<{}>) => {
+        // const { audioModel } = this.props;
+        // this.isMove = true;
+        // this.startX = (e as any).offsetX;
+        // this.startClientX = e.clientX;
+        // this.width = 0;
+        // this.forceUpdate();
+        // let left = this.startX;
+        // if (this.width < 0) {
+        //     left += this.width;
+        // }
+        // audioModel.selection.start = audioModel.getTimeByX(left);
+        // e.preventDefault();
+    };
+
+    mode: 'left' | 'right' | 'selection' | '' = '';
+    leftHandleStart = (e: React.MouseEvent<{}>) => {
         const { audioModel } = this.props;
-        this.isMove = true;
-        this.startX = (e as any).offsetX;
+        this.mode = 'left';
         this.startClientX = e.clientX;
-        this.width = 0;
-        this.forceUpdate();
-        let left = this.startX;
-        if (this.width < 0) {
-            left += this.width;
-        }
-        audioModel.selection.start = audioModel.getTimeByX(left);
-        e.preventDefault();
+        this.currentStart = audioModel.selection.start;
+        this.currentEnd = audioModel.selection.end;
+        // this.startX = (e as any).offsetX;
+    };
+
+    rightHandleStart = (e: React.MouseEvent<{}>) => {
+        const { audioModel } = this.props;
+        this.mode = 'right';
+        this.startClientX = e.clientX;
+        this.currentStart = audioModel.selection.start;
+        this.currentEnd = audioModel.selection.end;
+        // this.startX = (e as any).offsetX;
     };
 
     render() {
         const { audioModel } = this.props;
         return (
             <div
-                className="audio-selection"
+                className="__"
                 onMouseDown={this.start}
                 style={{ width: audioModel.imd.width, height: audioModel.imd.height }}>
-                <div className="audio-selection__handle" style={{
+                <DocMouse onMouseMove={this.move} onMouseUp={this.stop}/>
+                <div className="__selection" style={{
                     left: audioModel.getXByTime(audioModel.selection.start),
                     width: audioModel.getXByTime(audioModel.selection.end - audioModel.selection.start)
                 }}/>
+                <div className="__left-handle" onMouseDown={this.leftHandleStart}
+                     style={{ left: audioModel.getXByTime(audioModel.selection.start) }}/>
+                <div className="__right-handle" onMouseDown={this.rightHandleStart}
+                     style={{ left: audioModel.getXByTime(audioModel.selection.end) }}/>
             </div>
         );
     }
 
 
-    move(e: MouseEvent) {
+    move = (e: MouseEvent) => {
+        const { audioModel, model } = this.props;
+        switch (this.mode) {
+            case 'left': {
+                const moving = audioModel.getTimeByX(e.clientX - this.startClientX);
+                audioModel.selection.start = this.currentStart + moving;
+                model.updateCurrentLineTiming();
+                break;
+            }
+            case 'right': {
+                const moving = audioModel.getTimeByX(e.clientX - this.startClientX);
+                audioModel.selection.end = this.currentEnd + moving;
+                model.updateCurrentLineTiming();
+                break;
+            }
+            case 'selection':
+                // this.width = e.clientX - this.startClientX;
+                // audioModel.selection.end = audioModel.selection.start + audioModel.getTimeByX(Math.abs(this.width));
+                // this.forceUpdate();
+
+                break;
+        }
+    };
+
+    stop = () => {
         const { audioModel } = this.props;
 
-        if (this.isMove) {
-            this.width = e.clientX - this.startClientX;
-            audioModel.selection.end = audioModel.selection.start + audioModel.getTimeByX(Math.abs(this.width));
-            // this.forceUpdate();
-        }
-    }
+        switch (this.mode) {
+            case 'left': {
+                audioModel.play.play(audioModel.selection.start, audioModel.selection.end - audioModel.selection.start);
+                this.mode = '';
+                break;
+            }
+            case 'right': {
+                audioModel.play.play(audioModel.selection.start, audioModel.selection.end - audioModel.selection.start);
+                this.mode = '';
+                break;
+            }
+            case 'selection':
+                // this.width = e.clientX - this.startClientX;
+                // audioModel.selection.end = audioModel.selection.start + audioModel.getTimeByX(Math.abs(this.width));
+                // this.forceUpdate();
 
-    stop() {
-        if (this.isMove) {
-            this.isMove = false;
-            // this.props.audioModel.play.play(this.getStartTime(), this.getDur());
+                break;
         }
-    }
+    };
 }

@@ -8,8 +8,8 @@ export class EditorSelection {
 }
 
 
-interface LocalSettings {
-    audioFixes: { [hash: number]: [number, number] }
+interface EditorJSON {
+    lines: { text: string; start: number, dur: number }[];
 }
 
 export class EditorModel {
@@ -18,11 +18,16 @@ export class EditorModel {
     selection = new EditorSelection();
     audioModel: AudioModel;
 
-    localSettings = new LocalStorageValue<LocalSettings>('yt_' + this.id);
+    localSettings: LocalStorageValue<EditorJSON>;
 
-    constructor(json: any) {
-        this.id = json.id;
-        this.lines = json.lines.map((line: any) => new LineModel(line.text, line.start, line.start + line.dur));
+    constructor(id: string, json: EditorJSON) {
+        this.id = id;
+        this.localSettings = new LocalStorageValue('yt_' + this.id, () => null!);
+        const localJson = this.localSettings.get();
+        if (localJson !== null) {
+            json = localJson;
+        }
+        this.lines = json.lines.map(line => new LineModel(line.text, line.start, line.start + line.dur));
     }
 
     getLine(line: number) {
@@ -45,50 +50,83 @@ export class EditorModel {
             this.selection.wordIdx = 0;
             this.selection.lineIdx++;
             this.selectAudio();
+            this.save();
         }
     }
 
-    joinWithPreviuosLine() {
+    joinWithPreviousLine() {
         const line = this.getLine(this.selection.lineIdx);
         const prevLine = this.getLine(this.selection.lineIdx - 1);
         if (line && prevLine) {
-            const newLine = prevLine.joinWith(line);
-            this.lines.splice(this.selection.lineIdx - 1, 2, newLine);
-            this.selection.wordIdx += prevLine.words.length;
-            this.selection.lineIdx--;
+            // const newLine = prevLine.joinWith(line);
+            const newPrevLineAppendText = [];
+            const newLineText = [];
+            for (let i = 0; i < this.selection.wordIdx; i++) {
+                newPrevLineAppendText.push(line.words[i].word);
+            }
+            for (let i = this.selection.wordIdx; i < line.words.length; i++) {
+                newLineText.push(line.words[i].word);
+            }
+            if (this.selection.wordIdx > 0) {
+                const middle = line.start + (line.end - line.start) / 2;
+                const newPrevLine = new LineModel(prevLine.text + ' ' + newPrevLineAppendText.join(' '), prevLine.start, middle, true, false);
+                const newLine = new LineModel(newLineText.join(' '), middle, line.end, false, true);
+                this.lines.splice(this.selection.lineIdx - 1, 2, newPrevLine, newLine);
+                this.selection.wordIdx = 0;
+            } else {
+                const newPrevLine = new LineModel(prevLine.text + ' ' + line.text, prevLine.start, line.end, true, true);
+                this.lines.splice(this.selection.lineIdx - 1, 2, newPrevLine);
+                this.selection.wordIdx = prevLine.words.length;
+                this.selection.lineIdx--;
+            }
             this.selectAudio();
+            this.save();
         }
     }
 
     selectAudio() {
         const line = this.getLine(this.selection.lineIdx);
         if (line && this.audioModel) {
-            const settings = this.localSettings.get();
             let start = line.start;
             let end = line.end;
-            if (settings) {
-                const fixes = settings.audioFixes[line.hash];
-                if (fixes) {
-                    start = fixes[0];
-                    end = fixes[1];
-                }
-            }
             this.audioModel.selection.start = start;
             this.audioModel.selection.end = end;
             this.audioModel.scrollToSelection();
         }
     }
 
-    updateLineTime(lineIdx: number, start: number, end: number) {
+    updateLineTime(lineIdx: number, start: number, end: number, save = true) {
         const line = this.getLine(lineIdx);
         if (line) {
             const newLine = new LineModel(line.text, start, end);
             this.lines.splice(lineIdx, 1, newLine);
-            const settings = this.localSettings.get();
-            if (settings) {
-                settings.audioFixes[newLine.hash] = [start, end];
+            const prevLine = this.getLine(lineIdx - 1);
+            const nextLine = this.getLine(lineIdx + 1);
+            if (prevLine && prevLine.end > start) {
+                this.updateLineTime(lineIdx - 1, prevLine.start, start, false);
+            }
+            if (nextLine && nextLine.start < end) {
+                this.updateLineTime(lineIdx + 1, end, nextLine.end, false);
+            }
+            if (save) {
+                this.save();
             }
         }
+    }
+
+    updateCurrentLineTiming() {
+        this.updateLineTime(this.selection.lineIdx, this.audioModel.selection.start, this.audioModel.selection.end);
+    }
+
+    save() {
+        const json = {
+            lines: this.lines.map(line => ({
+                text: line.text,
+                start: (line.start * 100 | 0) / 100,
+                dur: ((line.end - line.start) * 100 | 0) / 100
+            }))
+        };
+        this.localSettings.set(json);
     }
 }
 
@@ -97,16 +135,16 @@ export class LineModel {
     readonly words: WordModel[] = [];
     readonly start: number;
     readonly end: number;
-    readonly confidentStart: boolean;
-    readonly confidentEnd: boolean;
+    readonly leftHasGap: boolean;
+    readonly rightHasGap: boolean;
     readonly hash: number;
 
-    constructor(text: string, start: number, end: number, confidentStart = true, confidentEnd = true) {
+    constructor(text: string, start: number, end: number, leftHasGap = true, rightHasGap = true) {
         this.text = text.trim();
         this.start = start;
         this.end = end;
-        this.confidentStart = confidentStart;
-        this.confidentEnd = confidentEnd;
+        this.leftHasGap = leftHasGap;
+        this.rightHasGap = rightHasGap;
         this.words = this.text.split(/\s+/).map(w => new WordModel(w));
         this.hash = makeHash(this.text);
     }

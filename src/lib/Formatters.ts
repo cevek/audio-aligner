@@ -1,9 +1,5 @@
-import { Match } from "../models/Match";
 import { normalizeDate } from "./DateUtils";
 
-export function formatMatchScore(match: Pick<Match, 'result_score'>) {
-    return match.result_score || '–:–';
-}
 
 export function formatEventTime(seconds: number, withPlus: boolean) {
     const sec = (seconds % 60);
@@ -16,9 +12,6 @@ export function formatDate(date: Date | string) {
     return dateFormat.format(date);
 }
 
-export function formatMatchStatus(match: Pick<Match, 'result_postponed' | 'result_canceled'>) {
-    return '';
-}
 
 var timeFormat = new Intl.DateTimeFormat(void 0, { hour: 'numeric', minute: 'numeric' });
 export function formatTime(date: string | Date) {

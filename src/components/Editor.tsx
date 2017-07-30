@@ -35,7 +35,7 @@ export class Editor extends React.Component<EditorProps, {}> {
         return new HTTP({ apiUrl: '/api' }).requestJSON('GET', '/video-data/' + ytId).then((data: { status: string; url?: string }) => {
             return fetchTrascript(ytId).then(subs => {
                 // console.log(subs);
-                const model = new EditorModel({ lines: subs });
+                const model = new EditorModel(ytId, { lines: subs });
                 return { model, audioUrl: data.url!, subs };
             });
         });
@@ -56,12 +56,12 @@ export class Editor extends React.Component<EditorProps, {}> {
             }
             case KeyCodes.ENTER: {
                 handled = true;
-                model.splitLine(!e.shiftKey);
+                model.splitLine(e.shiftKey);
                 break;
             }
             case KeyCodes.BACKSPACE: {
                 handled = true;
-                model.joinWithPreviuosLine();
+                model.joinWithPreviousLine();
                 break;
             }
             case KeyCodes.LEFT:
@@ -114,7 +114,7 @@ export class Editor extends React.Component<EditorProps, {}> {
             <div className="__">
                 <DocKey onKeyDown={this.keyDown}/>
                 {model.audioModel ?
-                    <SoundGram audioModel={model.audioModel}/> : null
+                    <SoundGram audioModel={model.audioModel} model={model}/> : null
                 }
                 <div className="__lines">
                     {model.lines.map((line, lineIdx) =>
@@ -150,6 +150,7 @@ export class EditorWord extends React.Component<EditorWordProps, {}> {
         model.selection.lineIdx = lineIdx;
         model.selection.wordIdx = wordIdx;
         model.selectAudio();
+        model.audioModel.playSelection();
     };
 
     render() {
