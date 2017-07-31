@@ -27,7 +27,7 @@ export class EditorModel {
         if (localJson !== null) {
             json = localJson;
         }
-        this.lines = json.lines.map(line => new LineModel(line.text, line.start, line.start + line.dur));
+        this.lines = json.lines.map(line => new LineModel(line.text, line.start, Math.max(line.start + line.dur, line.start + .5)));
     }
 
     getLine(line: number) {
@@ -102,11 +102,13 @@ export class EditorModel {
             this.lines.splice(lineIdx, 1, newLine);
             const prevLine = this.getLine(lineIdx - 1);
             const nextLine = this.getLine(lineIdx + 1);
-            if (prevLine && prevLine.end > start) {
-                this.updateLineTime(lineIdx - 1, prevLine.start, start, false);
+            if (prevLine && start !== line.start) {
+                if ((prevLine.end + .5) > line.start) {
+                    this.updateLineTime(lineIdx - 1, Math.min(prevLine.start, start - .5), start, false);
+                }
             }
-            if (nextLine && nextLine.start < end) {
-                this.updateLineTime(lineIdx + 1, end, nextLine.end, false);
+            if (nextLine && end !== line.end && (nextLine.start - .5) < end) {
+                this.updateLineTime(lineIdx + 1, end, Math.max(nextLine.end, end + .5), false);
             }
             if (save) {
                 this.save();

@@ -44,6 +44,7 @@ body {
 .audio-selection {
   position: absolute;
   top: 0;
+  height: 100%;
   &__selection {
     position: absolute;
     top: 0;
@@ -74,15 +75,17 @@ body {
   overflow: hidden;
   //overflow-x: scroll;
   border-bottom: 3px solid rgba(0, 0, 0, 0.2);
-  height: 50px;
+  height: 100px;
   &__inner {
-
+    will-change: transform;
   }
   &__current-time {
     top: 0;
     position: absolute;
     width: 1px;
     background: white;
+    height: 100%;
+    will-change: transform;
   }
 
   &__lines {

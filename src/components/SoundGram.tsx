@@ -16,17 +16,27 @@ export class SoundGram extends React.Component<SoundGramProps, {}> {
     refs: {
         root: HTMLElement;
         canvas2: HTMLCanvasElement;
+        canvas3: HTMLCanvasElement;
         currentTime: HTMLElement;
     };
 
     componentDidMount() {
-        let canvas = this.refs.canvas2;
-        const ctx = canvas.getContext('2d')!;
         const { audioModel } = this.props;
-        canvas.setAttribute('width', Math.min(audioModel.imd.width, 32767) + '');
-        canvas.setAttribute('height', audioModel.imd.height + '');
-        ctx.putImageData(audioModel.imd, 0, 0);
+        // let canvas = this.refs.canvas2;
+        let canvasGraph = this.refs.canvas3;
+        // const ctx = canvas.getContext('2d')!;
+        // canvas.setAttribute('width', Math.min(audioModel.imd.width, 32767) + '');
+        // canvas.setAttribute('height', audioModel.imd.height + '');
+        // ctx.putImageData(audioModel.imd, 0, 0);
         audioModel.scrollDom = this.refs.root;
+
+
+        canvasGraph.setAttribute('width', Math.min(audioModel.audioGraph.width, 32767) + '');
+        canvasGraph.setAttribute('height', audioModel.audioGraph.height + '');
+        const ctxGraph = canvasGraph.getContext('2d')!;
+        ctxGraph.putImageData(audioModel.audioGraph, 0, 0);
+
+
         this.updateCurrentTime();
     }
 
@@ -49,7 +59,8 @@ export class SoundGram extends React.Component<SoundGramProps, {}> {
         return (
             <div ref="root" className="__">
                 <div className="__inner">
-                    <canvas ref="canvas2"/>
+                    {/*<canvas ref="canvas2"/>*/}
+                    <canvas ref="canvas3"/>
                     <div className="__lines">
                         {model.lines.map(line =>
                             <div className="__line" style={{
@@ -63,7 +74,6 @@ export class SoundGram extends React.Component<SoundGramProps, {}> {
                         className="__current-time"
                         ref="currentTime"
                         style={{
-                            height: audioModel.imd.height,
                             transform: `translateX(${audioModel.getXByTime(audioModel.play.getCurrentTime())}px)`,
                         }}
                     />
@@ -135,7 +145,7 @@ class AudioSelection extends React.Component<AudioSelectionProps, {}> {
             <div
                 className="__"
                 onMouseDown={this.start}
-                style={{ width: audioModel.imd.width, height: audioModel.imd.height }}>
+                style={{ width: audioModel.imd.width }}>
                 <DocMouse onMouseMove={this.move} onMouseUp={this.stop}/>
                 <div className="__selection" style={{
                     left: audioModel.getXByTime(audioModel.selection.start),
