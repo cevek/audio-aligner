@@ -1,7 +1,7 @@
 import * as Koa from 'koa';
 import { createPackerInstance } from './config';
 import * as Router from 'koa-router';
-import { createWriteStream, existsSync, readFileSync, unlinkSync } from 'fs';
+import { createWriteStream, existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import * as childProcess from 'child_process';
 import { CoreOptions, get as requestGet, RequestResponse } from 'request';
 
@@ -35,6 +35,7 @@ router.get('/api/video-data/:ytId', async (ctx, next) => {
     const ytId = ctx.params.ytId;
     const mp4Video = folder + '' + ytId + '.mp4';
     const mp4Audio = folder + '' + ytId + '.m4a';
+    const captionsFile = folder + '' + ytId + '.txt';
     try {
         if (!existsSync(mp4Audio)) {
             console.log('get yt page');
@@ -44,11 +45,22 @@ router.get('/api/video-data/:ytId', async (ctx, next) => {
             console.log('json parse');
             const m = JSON.parse(d);
             console.log('extract url from json');
-            const url = m.args.url_encoded_fmt_stream_map.split(',').map((l: string) => l.split('&').reduce((acc: any, v: string) => {
+            const urls = m.args.url_encoded_fmt_stream_map.split(',').map((l: string) => l.split('&').reduce((acc: any, v: string) => {
                 const [a, b] = v.split('=');
                 acc[a] = decodeURIComponent(b);
                 return acc;
-            }, {})).find((r: any) => r.itag == 18).url;
+            }, {}));
+            const url = urls.find((r: any) => r.itag == 18).url;
+            const player = JSON.parse(m.args.player_response);
+            const ytCaptions = player.captions.playerCaptionsTracklistRenderer.captionTracks
+            const captions:any[] = [];
+            // console.log(ytCaptions);
+            for (let i = 0; i < ytCaptions.length; i++) {
+                const caption = ytCaptions[i];
+                captions.push({info: caption, data: (await get(caption.baseUrl + '&fmt=srv3')).toString('utf8')});
+            }
+            writeFileSync(captionsFile, JSON.stringify(captions));
+
             console.log('download video');
             await download(url, mp4Video);
             console.log('extract audio');
@@ -57,7 +69,7 @@ router.get('/api/video-data/:ytId', async (ctx, next) => {
             unlinkSync(mp4Video);
             console.log('done');
         }
-        ctx.body = { status: 'ok', url: '/assets/' + ytId + '.m4a' };
+        ctx.body = { status: 'ok', url: '/assets/' + ytId + '.m4a', captions: JSON.parse(readFileSync(captionsFile, 'utf8')) };
     } catch (err) {
         console.error(err);
         ctx.body = { status: 'error' };

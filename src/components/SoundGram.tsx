@@ -60,13 +60,22 @@ export class SoundGram extends React.Component<SoundGramProps, {}> {
             <div ref="root" className="__">
                 <div className="__inner">
                     {/*<canvas ref="canvas2"/>*/}
+                    <div className="__words">
+                        {model.ssrSubs.filter(w => w.dur > .2).map(word =>
+                            <div className="__word" style={{
+                                left: audioModel.getXByTime(word.start),
+                                width: audioModel.getXByTime(word.dur)
+                            }}>{word.text}</div>
+                        )}
+                    </div>
                     <canvas ref="canvas3"/>
+
                     <div className="__lines">
                         {model.lines.map(line =>
                             <div className="__line" style={{
                                 left: audioModel.getXByTime(line.start),
                                 width: audioModel.getXByTime(line.end - line.start)
-                            }}/>
+                            }}>{line.text}</div>
                         )}
                     </div>
                     <AudioSelection audioModel={audioModel} model={model}/>

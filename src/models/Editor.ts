@@ -1,6 +1,7 @@
 import { observable } from 'mobx';
 import { AudioModel } from './Audio';
 import { LocalStorageValue } from '../lib/LocalStorageValue';
+import { Sub } from '../components/Sub';
 
 export class EditorSelection {
     @observable lineIdx = -1;
@@ -17,11 +18,13 @@ export class EditorModel {
     @observable lines: LineModel[] = [];
     selection = new EditorSelection();
     audioModel: AudioModel;
+    ssrSubs: Sub[];
 
     localSettings: LocalStorageValue<EditorJSON>;
 
-    constructor(id: string, json: EditorJSON) {
+    constructor(id: string, json: EditorJSON, ssrSubs: Sub[]) {
         this.id = id;
+        this.ssrSubs = ssrSubs;
         this.localSettings = new LocalStorageValue('yt_' + this.id, () => null!);
         const localJson = this.localSettings.get();
         if (localJson !== null) {

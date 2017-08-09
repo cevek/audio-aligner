@@ -7,7 +7,7 @@ import { b_ } from '../lib/b_';
 import { SoundGram } from './SoundGram';
 import { AudioModel } from '../models/Audio';
 import { HTTP } from '../lib/HTTP';
-import { fetchTrascript, Sub } from './Sub';
+import { fetchTrascript, parseSSR3, Sub } from './Sub';
 import { PlayingStatus } from 'sound-utils';
 
 
@@ -15,6 +15,7 @@ export interface EditorProps {
     model: EditorModel;
     audioUrl: string;
     subs: Sub[];
+    ssrSubs: Sub[];
 }
 
 export enum KeyCodes {
@@ -31,13 +32,16 @@ export enum KeyCodes {
 @observer
 export class Editor extends React.Component<EditorProps, {}> {
     static onEnter({ urlParams, onEnd }: RouteParams): Promise<EditorProps> {
-        const ytId = 'sRBaEM3ngCc';
-        return new HTTP({ apiUrl: '/api' }).requestJSON('GET', '/video-data/' + ytId).then((data: { status: string; url?: string }) => {
-            return fetchTrascript(ytId).then(subs => {
+        // const ytId = 'sRBaEM3ngCc';
+        const ytId = '2h2f2Mdra4I';
+        return new HTTP({ apiUrl: '/api' }).requestJSON('GET', '/video-data/' + ytId).then((data: { status: string; captions: any[]; url?: string }) => {
+            const ssrSubs = parseSSR3(data.captions[0].data);
+            const subs = parseSSR3(data.captions[1].data);
+            // return fetchTrascript(ytId).then(subs => {
                 // console.log(subs);
-                const model = new EditorModel(ytId, { lines: subs });
-                return { model, audioUrl: data.url!, subs };
-            });
+                const model = new EditorModel(ytId, { lines: subs }, ssrSubs);
+                return { model, audioUrl: data.url!, subs, ssrSubs };
+            // });
         });
     }
 

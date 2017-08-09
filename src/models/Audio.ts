@@ -47,7 +47,7 @@ export class AudioModel {
         const width = Math.ceil(channelData.length / 100);
         const height = 100;
         const halfHeight = height / 2;
-        const amplify = 50;
+        const amplify = 100;
         const graph = new ImageData(width, height);
         const graphData = new Int32Array(width * height);
         let prev = 0;
